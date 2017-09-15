@@ -1,28 +1,26 @@
-const GitKit = require('gitkit');
-const NodeFS = require('gitkit/lib/fs/node');
+/* const spawn = require('child_process').spawn;
 
-// Prepare the filesystem
-const fs = new NodeFS('/Users/evan.zlotnick/tempclone');
 
-// Create a repository instance
-const repo = GitKit.Repository.createWithFS(fs);
+let shellScript = spawn('sh ./clone.sh', ['yolo']);
 
-const transport = new GitKit.HTTPTransport('https://github.com/PokerGuy/react-boilerplate.git');
-GitKit.RepoUtils.init(repo)
-    .then(function() {
-        return GitKit.TransferUtils.clone(repo, transport);
-    })
-    .then(
-        function() {
-            console.log('Success! Sweet!');
-        },
-        function(err) {
-            console.log('D\' Oh!');
-            console.log(err);
-        },
+shellScript.stdout.on('data', function (data) {
+    console.log(data.toString());
+});
 
-        // Progress
-        function(line) {
-            console.log(line.getMessage());
-        }
-    );
+shellScript.stderr.on('data' + function (data) {
+        console.log('STDERR: ' + data.toString());
+    });
+
+shellScript.on('exit', function (code) {
+    console.log('Exited with code ' + code.toString());
+    console.log('Ending the Lambda now...');
+    callback(null, response);
+}); */
+
+const { spawn } = require('child_process');
+
+const child = spawn('sh', ['hello.sh', 'yolo']);
+
+child.stdout.on('data', (data) => {
+    console.log(`child stdout:\n${data}`);
+});
