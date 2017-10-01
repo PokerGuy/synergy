@@ -29,7 +29,7 @@ provider:
         - "cloudformation:DescribeStackResource"
         - "cloudformation:UpdateStack"
         - "cloudformation:ListStacks"
-      Resource: "*"
+      Resource: "arn:aws:cloudformation:us-west-2:${file(./serverless.env.yml):${opt:AWS_ENV}.aws_account_number}:stack/synergydeployment-${opt:AWS_ENV}/*"
     - Effect: "Allow"
       Action:
         - "iam:GetRole"
