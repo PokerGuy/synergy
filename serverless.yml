@@ -36,6 +36,10 @@ provider:
       Resource: "*"
     - Effect: "Allow"
       Action:
+        - "apigateway:*"
+      Resource: "*"
+    - Effect: "Allow"
+      Action:
         - dynamodb:*
       Resource:
         - "*"
