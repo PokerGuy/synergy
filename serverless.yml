@@ -32,9 +32,7 @@ provider:
       Resource: "*"
     - Effect: "Allow"
       Action:
-        - "lambda:UpdateFunctionCode"
-        - "lambda:UpdateFunctionConfig"
-        - "lambda:GetFunctionConfiguration"
+        - "lambda:*"
       Resource: "*"
     - Effect: "Allow"
       Action:
