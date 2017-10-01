@@ -24,12 +24,8 @@ provider:
       Resource: 'arn:aws:sns:us-west-2:${file(./serverless.env.yml):${opt:AWS_ENV}.aws_account_number}:${opt:AWS_ENV}-clone'
     - Effect: "Allow"
       Action:
-        - "cloudformation:CreateStack"
-        - "cloudformation:DescribeStacks"
-        - "cloudformation:DescribeStackResource"
-        - "cloudformation:UpdateStack"
-        - "cloudformation:ListStacks"
-      Resource: "arn:aws:cloudformation:us-west-2:${file(./serverless.env.yml):${opt:AWS_ENV}.aws_account_number}:stack/synergydeployment-${opt:AWS_ENV}/*"
+        - "cloudformation:*"
+      Resource: "*"
     - Effect: "Allow"
       Action:
         - "iam:GetRole"
