@@ -14,12 +14,6 @@ fi
 
 cd /tmp/clone
 
-pwd
-
-echo "This is what we have in the /tmp/clone directory"
-
-ls
-
 echo "Running the deploy script"
 
 ./deploy.sh $AWS_ENV
