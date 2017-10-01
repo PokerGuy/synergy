@@ -123,7 +123,7 @@ resources:
           - AttributeName: "start_time"
             KeyType: "HASH"
           - AttributeName: "repo_name"
-            KeyType: "SORT"
+            KeyType: "RANGE"
         ProvisionedThroughput:
           ReadCapacityUnits: 1
           WriteCapacityUnits: 1
