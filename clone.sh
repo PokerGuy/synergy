@@ -1,11 +1,16 @@
 #!/bin/bash
-echo "Received the parameter ${1}"
+CLONE_URL=$1
+AWS_ENV=$2
 
-tar
+rm -rf /tmp/clone
 
 cd /tmp
 
-git clone $1 clone
+if [ "$AWS_ENV" == "prod" ]; then
+    git clone -b master --single-branch $CLONE_URL clone
+else
+    git clone -b $AWS_ENV --single-branch $CLONE_URL clone
+fi
 
 cd /tmp/clone
 
@@ -15,4 +20,6 @@ echo "This is what we have in the /tmp/clone directory"
 
 ls
 
-./deploy.sh
+echo "Running the deploy script"
+
+./deploy.sh $AWS_ENV
