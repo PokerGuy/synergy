@@ -26,7 +26,7 @@ provider:
       Action:
         - "cloudformation:CreateStack"
         - "cloudformation:DescribeStacks"
-        - "cloudformation:DescribeStackResources"
+        - "cloudformation:DescribeStackResource"
         - "cloudformation:UpdateStack"
         - "cloudformation:ListStacks"
       Resource: "*"
