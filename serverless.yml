@@ -29,7 +29,7 @@ provider:
         - "cloudformation:DescribeStackResource"
         - "cloudformation:UpdateStack"
         - "cloudformation:ListStacks"
-      Resource: "arn:aws:cloudformation:us-west-2:${file(./serverless.env.yml):${opt:AWS_ENV}.aws_account_number}:stack/synergydeployment-${opt:AWS_ENV}/*"
+      Resource: "*"
     - Effect: "Allow"
       Action:
         - "iam:GetRole"
@@ -40,7 +40,11 @@ provider:
         - "lambda:UpdateFunctionConfig"
         - "lambda:GetFunctionConfiguration"
       Resource: "*"
-
+    - Effect: "Allow"
+      Action:
+        - dynamodb:*
+      Resource:
+        - "arn:aws:dynamodb:*:*:table/build_lock"
   environment:
     AWS_ENV: ${opt:AWS_ENV}
     GIT_SECRET: ${file(./serverless.env.yml):${opt:AWS_ENV}.git_secret}
@@ -111,4 +115,21 @@ resources:
               Action:
                 - "kms:Decrypt"
               Resource: "*"
+    buildLockTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: "start_time"
+            AttributeType: "N"
+          - AttributeName: "repo_name"
+            AttributeType: "S"
+        KeySchema:
+          - AttributeName: "start_time"
+            KeyType: "HASH"
+          - AttributeName: "repo_name"
+            KeyType: "SORT"
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        TableName: "build_lock"
   Outputs:
