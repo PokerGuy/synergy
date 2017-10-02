@@ -126,4 +126,20 @@ resources:
           ReadCapacityUnits: 1
           WriteCapacityUnits: 1
         TableName: "build_lock"
+    buildStep:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: "repo_name"
+            AttributeType: "S"
+          - AttributeName: "build_start_time"
+            AttributeType: "N"
+        KeySchema:
+          - AttributeName: "repo_name"
+            KeyType: "HASH"
+          - AttributeName: "build_start_time"
+            KeyType: "RANGE"
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
   Outputs:
