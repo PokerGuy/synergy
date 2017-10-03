@@ -139,7 +139,7 @@ resources:
             KeyType: "HASH"
           - AttributeName: "build_start"
             KeyType: "RANGE"
-        ProvisonedThrougput:
+        ProvisionedThroughput:
           ReadCapacityUnits: 1
           WriteCapacityUnits: 1
         TableName: "builds"
@@ -162,9 +162,12 @@ resources:
         - IndexName: BuildStart
           KeySchema:
           - AttributeName: "build_start"
-            KeyType: "RANGE"
+            KeyType: "HASH"
           Projection:
             ProjectionType: "ALL"
+          ProvisionedThroughput:
+            ReadCapacityUnits: 1
+            WriteCapacityUnits: 1
         ProvisionedThroughput:
           ReadCapacityUnits: 1
           WriteCapacityUnits: 1
