@@ -53,9 +53,8 @@ package:
 #  include:
 #    - include-me.js
 #    - include-me-dir/**
-  exclude:
-    - node_modules/aws-sdk/**
-# The node aws-sdk is already part of the lambda...
+#  exclude:
+#    - node_modules/aws-sdk/**
 
 functions:
   githook:
