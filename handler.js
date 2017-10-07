@@ -347,7 +347,7 @@ module.exports.steps = (event, context, callback) => {
         IndexName: 'BuildStart',
         KeyConditionExpression: 'build_start = :build_start',
         ExpressionAttributeValues: {
-            ':build_start': event.pathParameters.build_start
+            ':build_start': parseInt(event.pathParameters.build_start)
         }
     };
     docClient.query(p, function (err, data) {
