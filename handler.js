@@ -55,7 +55,7 @@ function checkGitSecret(event, context, callback) {
                     ':repo_name': repo
                 }
             };
-            let lock;
+            let lock = {};
             docClient.query(p, function (err, data) {
                 if (err) {
                     console.log('Got an error querying dynamo');
