@@ -315,3 +315,28 @@ module.exports.locks = (event, context, callback) => {
         callback(null, response);
     })
 };
+
+module.exports.builds = (event, context, callback) => {
+    const p = {
+        TableName: 'builds',
+        KeyConditionExpression: 'repo_name = :repo_name',
+        ExpressionAttributeValues: {
+            ':repo_name': event.pathParameters.repo
+        }
+    };
+    docClient.query(p, function (err, data) {
+        if (err) {
+            console.log(err);
+        } else {
+            response = {
+                statusCode: 200,
+                headers: {
+                    "Access-Control-Allow-Origin": "*",
+                    "Access-Control-Allow-Credentials" : true
+                },
+                body: JSON.stringify(data.Items)
+            };
+            callback(null, response);
+        }
+    })
+};
