@@ -11,6 +11,7 @@
   "license": "ISC",
   "dependencies": {
     "async": "^2.5.0",
+    "aws-sdk": "^2.130.0",
     "axios": "^0.16.2",
     "crypto": "^1.0.1",
     "lambda-git": "^0.1.1",
@@ -18,7 +19,5 @@
     "serverless": "^1.23.0",
     "tar-fs": "^1.15.3"
   },
-  "devDependencies": {
-    "aws-sdk": "^2.119.0"
-  }
+  "devDependencies": {}
 }
