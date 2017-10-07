@@ -67,6 +67,13 @@ functions:
     handler: handler.deploy
     events:
       - sns: ${opt:AWS_ENV}-clone
+  locks:
+    handler: handler.locks
+    events:
+      - http:
+          path: locks
+          method: get
+          cors: true
 
 resources:
   Resources:

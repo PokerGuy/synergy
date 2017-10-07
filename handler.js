@@ -226,7 +226,7 @@ function runScript(event, callback) {
         if (err) {
             console.log('Error creating build entry...')
         } else {
-            console.log('Created the build entry...')
+            console.log('Created the build entry...');
             const cloneScript = spawn('sh', ['./clone.sh', msg.git.clone_url, process.env.AWS_ENV]);
 
             cloneScript.stdout.on('data', function (data) {
@@ -294,3 +294,24 @@ function runScript(event, callback) {
         }
     });
 }
+
+module.exports.locks = (event, context, callback) => {
+    const params = {
+        TableName: 'build_lock'
+    };
+    docClient.scan(params, function(err, data) {
+        if (err) {
+            console.log(err);
+        } else {
+            response = {
+                statusCode: 200,
+                headers: {
+                    "Access-Control-Allow-Origin": "*",
+                    "Access-Control-Allow-Credentials" : true
+                },
+                body: JSON.stringify(data.Items)
+            }
+        }
+        callback(null, response);
+    })
+};
