@@ -56,6 +56,7 @@ function checkGitSecret(event, context, callback) {
                 }
             };
             let lock = {};
+            let cont = false;
             docClient.query(p, function (err, data) {
                 if (err) {
                     console.log('Got an error querying dynamo');
@@ -76,38 +77,45 @@ function checkGitSecret(event, context, callback) {
                         // There has been a build before, so let us do an update...
                         console.log('Modifying an existing build...');
                         delete lock['end_time'];
+                        cont = true;
                     }
                 } else {
                     // Never built this repo before...
                     console.log('New build!');
                     lock.repo_name = repo;
+                    cont = true;
                 }
-                lock.start_time = (new Date).getTime();
-                lock.committer = {name: parsed.head_commit.committer.name, email: parsed.head_commit.committer.email};
-                lock.message = parsed.head_commit.message;
-                lock.hash = parsed.after;
-                lock.error = false;
-                const lockItem = {
-                    TableName: 'build_lock',
-                    Item: lock
-                };
-                docClient.put(lockItem, function(err, data) {
-                    if (err) {
-                        console.log('Error creating lock...')
-                    } else {
-                        const sns = new AWS.SNS();
-                        sns.publish(params, function (err, data) {
-                            if (err) {
-                                console.log(err);
-                            } else {
-                                console.log('Sent message to trigger build');
-                            }
-                            callback(null, {
-                                "statusCode": 200
+                if (cont) {
+                    lock.start_time = (new Date).getTime();
+                    lock.committer = {
+                        name: parsed.head_commit.committer.name,
+                        email: parsed.head_commit.committer.email
+                    };
+                    lock.message = parsed.head_commit.message;
+                    lock.hash = parsed.after;
+                    lock.error = false;
+                    const lockItem = {
+                        TableName: 'build_lock',
+                        Item: lock
+                    };
+                    docClient.put(lockItem, function (err, data) {
+                        if (err) {
+                            console.log('Error creating lock...')
+                        } else {
+                            const sns = new AWS.SNS();
+                            sns.publish(params, function (err, data) {
+                                if (err) {
+                                    console.log(err);
+                                } else {
+                                    console.log('Sent message to trigger build');
+                                }
+                                callback(null, {
+                                    "statusCode": 200
+                                });
                             });
-                        });
-                    }
-                })
+                        }
+                    })
+                }
             });
         } else {
             const url = _.find(config, function(c) {
