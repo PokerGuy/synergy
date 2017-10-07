@@ -41,8 +41,10 @@ function checkGitSecret(event, context, callback) {
                 },
                 clone_url: parsed.repository.clone_url
             };
+            const currTime = (new Date).getTime();
             const msg = {
-                git: details
+                git: details,
+                buildTime: currTime
             };
             const params = {
                 Message: JSON.stringify(msg),
@@ -63,13 +65,12 @@ function checkGitSecret(event, context, callback) {
                 } else if (data.Count > 0) {
                     // We already have a build lock
                     lock = data.Items[0];
-                    console.log('The value of lock is...');
-                    console.log(lock);
-                    if (lock.end_time === undefined && lock.start_time > ((new Date).getTime() - (5 * 60 * 1000))) {
+
+                    if (lock.end_time === undefined && lock.start_time > (currTime - (5 * 60 * 1000))) {
                         // There is no end time on the lock and the start time was < 5 minutes ago... Assume another build is going on...
                         console.log('Currently doing a build... Wait!');
                         const response = {
-                            statusCode:409,
+                            statusCode: 409,
                             body: JSON.stringify({msg: 'Currently doing a build.'})
                         };
                         callback(null, response);
@@ -118,7 +119,7 @@ function checkGitSecret(event, context, callback) {
                 }
             });
         } else {
-            const url = _.find(config, function(c) {
+            const url = _.find(config, function (c) {
                 return c.env == branch;
             });
             if (url !== undefined) {
@@ -208,19 +209,39 @@ function runScript(event, callback) {
     console.log('Received the sns message to start...');
     const msg = JSON.parse(event.Records[0].Sns.Message);
     console.log(msg.git);
-    const cloneScript = spawn('sh', ['./clone.sh', msg.git.clone_url, process.env.AWS_ENV]);
+    buildTime = msg.buildTime;
+    // Create an entry in the build table...
+    const params = {
+        TableName: 'builds',
+        Item: {
+            repo_name: msg.git.repo,
+            start_time: buildTime,
+            committer: {name: msg.git.commiter.name, email: msg.git.commiter.email},
+            message: msg.git.commitMessage,
+            hash: msg.git.commitMessage,
+            error: false
+        }
+    };
+    docClient.put(params, function (err, data) {
+        if (err) {
+            console.log('Error creating build entry...')
+        } else {
+            console.log('Created the build entry...')
+            const cloneScript = spawn('sh', ['./clone.sh', msg.git.clone_url, process.env.AWS_ENV]);
 
-    cloneScript.stdout.on('data', function (data) {
-        console.log(data.toString());
-    });
+            cloneScript.stdout.on('data', function (data) {
+                console.log(data.toString());
+            });
 
-    cloneScript.stderr.on('data', function (data) {
-        console.log('STDERR: ' + data.toString());
-    });
+            cloneScript.stderr.on('data', function (data) {
+                console.log('STDERR: ' + data.toString());
+            });
 
-    cloneScript.on('exit', function (code) {
-        console.log('Exited with code ' + code.toString());
-        console.log('Ending the Lambda now...');
-        callback();
+            cloneScript.on('exit', function (code) {
+                console.log('Exited with code ' + code.toString());
+                console.log('Ending the Lambda now...');
+                callback();
+            });
+        }
     });
 }
