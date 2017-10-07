@@ -62,7 +62,7 @@ function checkGitSecret(event, context, callback) {
                 } else if (data.Count > 0) {
                     // We already have a build lock
                     lock = data.Items[0];
-                    if (lock.end_time === undefined && lock.start_time < ((new Date).getTime() - (5 * 60 * 1000))) {
+                    if (lock.end_time === undefined && lock.start_time > ((new Date).getTime() - (5 * 60 * 1000))) {
                         // There is no end time on the lock and the start time was < 5 minutes ago... Assume another build is going on...
                         console.log('Currently doing a build... Wait!');
                         const response = {
