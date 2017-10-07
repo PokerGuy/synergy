@@ -340,3 +340,29 @@ module.exports.builds = (event, context, callback) => {
         }
     })
 };
+
+module.exports.steps = (event, context, callback) => {
+    const p = {
+        TableName: 'build_step',
+        IndexName: 'BuildStart',
+        KeyConditionExpression: 'build_start = :build_start',
+        ExpressionAttributeValues: {
+            ':build_start': event.pathParameters.build_start
+        }
+    };
+    docClient.query(p, function (err, data) {
+        if (err) {
+            console.log(err);
+        } else {
+            response = {
+                statusCode: 200,
+                headers: {
+                    "Access-Control-Allow-Origin": "*",
+                    "Access-Control-Allow-Credentials" : true
+                },
+                body: JSON.stringify(data.Items)
+            };
+            callback(null, response);
+        }
+    })
+};
