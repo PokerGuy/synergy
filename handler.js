@@ -215,7 +215,7 @@ function runScript(event, callback) {
         TableName: 'builds',
         Item: {
             repo_name: msg.git.repo,
-            start_time: buildTime,
+            build_start: buildTime,
             committer: {name: msg.git.commiter.name, email: msg.git.commiter.email},
             message: msg.git.commitMessage,
             hash: msg.git.commitMessage,
@@ -231,16 +231,65 @@ function runScript(event, callback) {
 
             cloneScript.stdout.on('data', function (data) {
                 console.log(data.toString());
+                const p = {
+                    TableName: 'build_step',
+                    Item: {
+                        repo_name: msg.git.repo,
+                        build_start: buildTime,
+                        build_step_time: (new Date).getTime(),
+                        output: data.toString(),
+                        type: 'stdout'
+
+                    }
+                };
+                docClient.put(p, function(err, data) {
+                    if (err) {
+                        console.log(err);
+                    }
+                })
             });
 
             cloneScript.stderr.on('data', function (data) {
                 console.log('STDERR: ' + data.toString());
+                const p = {
+                    TableName: 'build_step',
+                    Item: {
+                        repo_name: msg.git.repo,
+                        build_start: buildTime,
+                        build_step_time: (new Date).getTime(),
+                        output: data.toString(),
+                        type: 'stderr'
+
+                    }
+                };
+                docClient.put(p, function(err, data) {
+                    if (err) {
+                        console.log(err);
+                    }
+                })
             });
 
             cloneScript.on('exit', function (code) {
-                console.log('Exited with code ' + code.toString());
-                console.log('Ending the Lambda now...');
-                callback();
+                const p = {
+                    TableName: 'build_step',
+                    Item: {
+                        repo_name: msg.git.repo,
+                        build_start: buildTime,
+                        build_step_time: (new Date).getTime(),
+                        output: 'Exited with code ' + code.toString(),
+                        type: 'end'
+
+                    }
+                };
+                docClient.put(p, function(err, data) {
+                    if (err) {
+                        console.log(err);
+                    } else {
+                        console.log('Exited with code ' + code.toString());
+                        console.log('Ending the Lambda now...');
+                        callback();
+                    }
+                });
             });
         }
     });
