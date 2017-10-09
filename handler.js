@@ -270,25 +270,83 @@ function runScript(event, callback) {
             });
 
             cloneScript.on('exit', function (code) {
-                const p = {
-                    TableName: 'build_step',
-                    Item: {
-                        repo_name: msg.git.repo,
-                        build_start: buildTime,
-                        build_step_time: (new Date).getTime(),
-                        output: 'Exited with code ' + code.toString(),
-                        type: 'end'
+                const endTime = (new Date).getTime();
+                async.parallel([
+                    function(done) {
+                        const p = {
+                            TableName: 'build_step',
+                            Item: {
+                                repo_name: msg.git.repo,
+                                build_start: buildTime,
+                                build_step_time: (new Date).getTime(),
+                                output: 'Exited with code ' + code.toString(),
+                                type: 'end'
 
+                            }
+                        };
+                        docClient.put(p, function(err, data) {
+                            if (err) {
+                                done(err);
+                            } else {
+                                console.log('Exited with code ' + code.toString());
+                                console.log('Ending the Lambda now...');
+                                done();
+                            }
+                        });
+                    },
+                    function(done) {
+                        const p = {
+                            TableName: 'build_lock',
+                            Item: {
+                                start_time: buildTime,
+                                committer: {
+                                    name: msg.git.commiter.name,
+                                    email: msg.git.commiter.email
+                                },
+                                message: msg.git.commitMessage,
+                                hash: msg.git.commitMessage,
+                                end_time: endTime,
+                                error: errmsg
+                            }
+                        };
+                        docClient.put(p, function(err, data) {
+                            if (err) {
+                                done(err);
+                            } else {
+                                done();
+                            }
+                        });
+                    },
+                    function(done) {
+                        let errmsg = false;
+                        if (code !== 0) {
+                            errmsg = true;
+                        }
+                        const p = {
+                            TableName: 'builds',
+                            Item: {
+                                repo_name: msg.git.repo,
+                                build_start: buildTime,
+                                end_time: endTime,
+                                committer: {name: msg.git.commiter.name, email: msg.git.commiter.email},
+                                message: msg.git.commitMessage,
+                                hash: msg.git.commitMessage,
+                                error: errmsg
+                            }
+                        };
+                        docClient.put(p, function(err, data) {
+                            if (err) {
+                                done(err);
+                            } else {
+                                done();
+                            }
+                        });
                     }
-                };
-                docClient.put(p, function(err, data) {
+                    ], function(err) {
                     if (err) {
                         console.log(err);
-                    } else {
-                        console.log('Exited with code ' + code.toString());
-                        console.log('Ending the Lambda now...');
-                        callback();
                     }
+                    callback();
                 });
             });
         }
