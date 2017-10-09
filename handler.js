@@ -242,7 +242,7 @@ function runScript(event, callback) {
 
                     }
                 };
-                docClient.put(p, function(err, data) {
+                docClient.put(p, function (err, data) {
                     if (err) {
                         console.log(err);
                     }
@@ -262,7 +262,7 @@ function runScript(event, callback) {
 
                     }
                 };
-                docClient.put(p, function(err, data) {
+                docClient.put(p, function (err, data) {
                     if (err) {
                         console.log(err);
                     }
@@ -271,8 +271,12 @@ function runScript(event, callback) {
 
             cloneScript.on('exit', function (code) {
                 const endTime = (new Date).getTime();
+                let errmsg = false;
+                if (code !== 0) {
+                    errmsg = true;
+                }
                 async.parallel([
-                    function(done) {
+                    function (done) {
                         const p = {
                             TableName: 'build_step',
                             Item: {
@@ -284,7 +288,7 @@ function runScript(event, callback) {
 
                             }
                         };
-                        docClient.put(p, function(err, data) {
+                        docClient.put(p, function (err, data) {
                             if (err) {
                                 done(err);
                             } else {
@@ -294,10 +298,11 @@ function runScript(event, callback) {
                             }
                         });
                     },
-                    function(done) {
+                    function (done) {
                         const p = {
                             TableName: 'build_lock',
                             Item: {
+                                repo_name: msg.git.repo,
                                 start_time: buildTime,
                                 committer: {
                                     name: msg.git.commiter.name,
@@ -309,7 +314,7 @@ function runScript(event, callback) {
                                 error: errmsg
                             }
                         };
-                        docClient.put(p, function(err, data) {
+                        docClient.put(p, function (err, data) {
                             if (err) {
                                 done(err);
                             } else {
@@ -317,11 +322,7 @@ function runScript(event, callback) {
                             }
                         });
                     },
-                    function(done) {
-                        let errmsg = false;
-                        if (code !== 0) {
-                            errmsg = true;
-                        }
+                    function (done) {
                         const p = {
                             TableName: 'builds',
                             Item: {
@@ -334,7 +335,7 @@ function runScript(event, callback) {
                                 error: errmsg
                             }
                         };
-                        docClient.put(p, function(err, data) {
+                        docClient.put(p, function (err, data) {
                             if (err) {
                                 done(err);
                             } else {
@@ -342,7 +343,7 @@ function runScript(event, callback) {
                             }
                         });
                     }
-                    ], function(err) {
+                ], function (err) {
                     if (err) {
                         console.log(err);
                     }
@@ -357,7 +358,7 @@ module.exports.locks = (event, context, callback) => {
     const params = {
         TableName: 'build_lock'
     };
-    docClient.scan(params, function(err, data) {
+    docClient.scan(params, function (err, data) {
         if (err) {
             console.log(err);
         } else {
@@ -365,7 +366,7 @@ module.exports.locks = (event, context, callback) => {
                 statusCode: 200,
                 headers: {
                     "Access-Control-Allow-Origin": "*",
-                    "Access-Control-Allow-Credentials" : true
+                    "Access-Control-Allow-Credentials": true
                 },
                 body: JSON.stringify(data.Items)
             }
@@ -390,7 +391,7 @@ module.exports.builds = (event, context, callback) => {
                 statusCode: 200,
                 headers: {
                     "Access-Control-Allow-Origin": "*",
-                    "Access-Control-Allow-Credentials" : true
+                    "Access-Control-Allow-Credentials": true
                 },
                 body: JSON.stringify(data.Items)
             };
@@ -416,7 +417,7 @@ module.exports.steps = (event, context, callback) => {
                 statusCode: 200,
                 headers: {
                     "Access-Control-Allow-Origin": "*",
-                    "Access-Control-Allow-Credentials" : true
+                    "Access-Control-Allow-Credentials": true
                 },
                 body: JSON.stringify(data.Items)
             };
