@@ -218,7 +218,7 @@ function runScript(event, callback) {
             build_start: buildTime,
             committer: {name: msg.git.commiter.name, email: msg.git.commiter.email},
             message: msg.git.commitMessage,
-            hash: msg.git.commitMessage,
+            hash: msg.git.commitHash,
             error: false
         }
     };
@@ -309,7 +309,7 @@ function runScript(event, callback) {
                                     email: msg.git.commiter.email
                                 },
                                 message: msg.git.commitMessage,
-                                hash: msg.git.commitMessage,
+                                hash: msg.git.commitHash,
                                 end_time: endTime,
                                 error: errmsg
                             }
@@ -331,7 +331,7 @@ function runScript(event, callback) {
                                 end_time: endTime,
                                 committer: {name: msg.git.commiter.name, email: msg.git.commiter.email},
                                 message: msg.git.commitMessage,
-                                hash: msg.git.commitMessage,
+                                hash: msg.git.commitHash,
                                 error: errmsg
                             }
                         };
