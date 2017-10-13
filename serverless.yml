@@ -198,4 +198,25 @@ resources:
           ReadCapacityUnits: 1
           WriteCapacityUnits: 1
         TableName: "build_step"
+    receiveMessageRole:
+      Type: AWS::IAM::Role
+      Properties:
+            AssumeRolePolicyDocument:
+              Version: "2012-10-17"
+              Statement:
+                -
+                  Effect: "Allow"
+                  Principal: "*"
+                  Action:
+                    - "sts:AssumeRole"
+            Policies:
+              -
+                PolicyName: "receiveMessages"
+                PolicyDocument:
+                  Version: "2012-10-17"
+                  Statement:
+                    -
+                      Effect: "Allow"
+                      Action: ["iot:Connect", "iot:Subscribe", "iot:Receive"]
+                      Resource: "*"
   Outputs:
