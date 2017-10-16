@@ -425,3 +425,54 @@ module.exports.steps = (event, context, callback) => {
         }
     })
 };
+
+module.exports.iot = (event, context, callback) => {
+    const iot = new AWS.Iot();
+    const sts = new AWS.STS();
+    const roleName = 'IOTRole';
+    iot.describeEndpoint({}, (err, data) => {
+        if (err) return callback(err);
+
+        const iotEndpoint = data.endpointAddress;
+        const region = getRegion(iotEndpoint);
+
+        // get the account id which will be used to assume a role
+        sts.getCallerIdentity({}, (err, data) => {
+            if (err) return callback(err);
+
+            const params = {
+                RoleArn: `arn:aws:iam::${data.Account}:role/stream-function-role`,
+                RoleSessionName: getRandomInt().toString()
+            };
+
+            // assume role returns temporary keys
+            sts.assumeRole(params, (err, data) => {
+                if (err) return callback(err);
+                const res = {
+                    statusCode: 200,
+                    headers: {
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    body: JSON.stringify({
+                        iotEndpoint: iotEndpoint,
+                        region: region,
+                        accessKey: data.Credentials.AccessKeyId,
+                        secretKey: data.Credentials.SecretAccessKey,
+                        sessionToken: data.Credentials.SessionToken
+                    })
+                };
+                callback(null, res);
+            })
+        })
+    })
+};
+
+const getRegion = (iotEndpoint) => {
+    const partial = iotEndpoint.replace('.amazonaws.com', '');
+    const iotIndex = iotEndpoint.indexOf('iot');
+    return partial.substring(iotIndex + 4);
+};
+
+const getRandomInt = () => {
+    return Math.floor(Math.random() * 100000000);
+};

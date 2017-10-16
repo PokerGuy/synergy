@@ -49,6 +49,16 @@ provider:
         - iam:*
       Resource:
         - "*"
+    - Effect: "Allow"
+      Action:
+        - iot:DescribeEndpoint
+      Resource:
+        - "*"
+    - Effect: "Allow"
+      Action:
+        - sts:AssumeRole
+      Resource:
+        - "*"
   environment:
     AWS_ENV: ${opt:AWS_ENV}
     GIT_SECRET: ${file(./serverless.env.yml):${opt:AWS_ENV}.git_secret}
@@ -92,6 +102,13 @@ functions:
     events:
       - http:
           path: build/{repo}/{build_start}
+          method: get
+          cors: true
+  iot:
+    handler: handler.iot
+    events:
+      - http:
+          path: iot
           method: get
           cors: true
 
@@ -198,25 +215,31 @@ resources:
           ReadCapacityUnits: 1
           WriteCapacityUnits: 1
         TableName: "build_step"
-    receiveMessageRole:
-      Type: AWS::IAM::Role
+    streamRole:
+      Type: "AWS::IAM::Role"
       Properties:
-            AssumeRolePolicyDocument:
+        AssumeRolePolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+            -
+              Effect: "Allow"
+              Principal:
+                AWS: arn:aws:iam::${file(./serverless.env.yml):${opt:AWS_ENV}.aws_account_number}:root
+              Action:
+                - "sts:AssumeRole"
+        Policies:
+          -
+            PolicyName: stream-function-policy
+            PolicyDocument:
               Version: "2012-10-17"
               Statement:
                 -
                   Effect: "Allow"
-                  Principal: "*"
                   Action:
-                    - "sts:AssumeRole"
-            Policies:
-              -
-                PolicyName: "receiveMessages"
-                PolicyDocument:
-                  Version: "2012-10-17"
-                  Statement:
-                    -
-                      Effect: "Allow"
-                      Action: ["iot:Connect", "iot:Subscribe", "iot:Receive"]
-                      Resource: "*"
+                    - iot:Connect
+                    - iot:Subscribe
+                    - iot:Publish
+                    - iot:Receive
+                  Resource: "*"
+        RoleName: stream-function-role
   Outputs:
