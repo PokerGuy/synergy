@@ -14,6 +14,7 @@ let setupComplete = false;
 //Used to determine if the lambda is hot or cold
 const encrypted = process.env.GIT_SECRET;
 let decrypted;
+let iotGateway;
 
 function checkGitSecret(event, context, callback) {
     let hash, hmac;
@@ -427,42 +428,55 @@ module.exports.steps = (event, context, callback) => {
 };
 
 module.exports.iot = (event, context, callback) => {
+    if (!iotGateway) {
+        getIotGateway(function () {
+            generateCredentials(callback);
+        })
+    } else {
+        generateCredentials(callback);
+    }
+}
+
+function getIotGateway(cb) {
     const iot = new AWS.Iot();
-    const sts = new AWS.STS();
-    const roleName = 'IOTRole';
     iot.describeEndpoint({}, (err, data) => {
         if (err) return callback(err);
 
-        const iotEndpoint = data.endpointAddress;
-        const region = getRegion(iotEndpoint);
+        iotGateway = data.endpointAddress;
+        cb();
+    })
+}
 
-        // get the account id which will be used to assume a role
-        sts.getCallerIdentity({}, (err, data) => {
+function generateCredentials(callback) {
+    const region = getRegion(iotGateway);
+    const sts = new AWS.STS();
+    const roleName = 'IOTRole';
+    // get the account id which will be used to assume a role
+    sts.getCallerIdentity({}, (err, data) => {
+        if (err) return callback(err);
+
+        const params = {
+            RoleArn: `arn:aws:iam::${data.Account}:role/stream-function-role`,
+            RoleSessionName: getRandomInt().toString()
+        };
+
+        // assume role returns temporary keys
+        sts.assumeRole(params, (err, data) => {
             if (err) return callback(err);
-
-            const params = {
-                RoleArn: `arn:aws:iam::${data.Account}:role/stream-function-role`,
-                RoleSessionName: getRandomInt().toString()
+            const res = {
+                statusCode: 200,
+                headers: {
+                    'Access-Control-Allow-Origin': '*'
+                },
+                body: JSON.stringify({
+                    iotEndpoint: iotEndpoint,
+                    region: region,
+                    accessKey: data.Credentials.AccessKeyId,
+                    secretKey: data.Credentials.SecretAccessKey,
+                    sessionToken: data.Credentials.SessionToken
+                })
             };
-
-            // assume role returns temporary keys
-            sts.assumeRole(params, (err, data) => {
-                if (err) return callback(err);
-                const res = {
-                    statusCode: 200,
-                    headers: {
-                        'Access-Control-Allow-Origin': '*'
-                    },
-                    body: JSON.stringify({
-                        iotEndpoint: iotEndpoint,
-                        region: region,
-                        accessKey: data.Credentials.AccessKeyId,
-                        secretKey: data.Credentials.SecretAccessKey,
-                        sessionToken: data.Credentials.SessionToken
-                    })
-                };
-                callback(null, res);
-            })
+            callback(null, res);
         })
     })
 };
