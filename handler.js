@@ -469,7 +469,7 @@ function generateCredentials(callback) {
                     'Access-Control-Allow-Origin': '*'
                 },
                 body: JSON.stringify({
-                    iotEndpoint: iotEndpoint,
+                    iotEndpoint: iotGateway,
                     region: region,
                     accessKey: data.Credentials.AccessKeyId,
                     secretKey: data.Credentials.SecretAccessKey,
