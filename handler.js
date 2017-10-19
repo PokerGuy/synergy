@@ -168,7 +168,9 @@ function checkGitSecret(event, context, callback) {
             ], function (err) {
                 console.log(err);
                 console.log('sending back the 200 response...');
-                callback(null, {"statusCode": 200});
+                lockClient.end(function(err) {
+                    callback(null, {"statusCode": 200});
+                });
             });
         } else {
             const url = _.find(config, function (c) {
