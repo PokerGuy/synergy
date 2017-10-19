@@ -10,11 +10,43 @@ const _ = require('lodash');
 const axios = require('axios');
 const docClient = new AWS.DynamoDB.DocumentClient({'region': 'us-west-2'});
 let setupComplete = false;
+const awsIoT = require('aws-iot-device-sdk');
+let lockClient;
 
 //Used to determine if the lambda is hot or cold
 const encrypted = process.env.GIT_SECRET;
 let decrypted;
 let iotGateway;
+
+function connectLockClient(cb) {
+    async.series([
+       function (done) {
+           if (!iotGateway) {
+               getIotGateway(function () {
+                   done();
+               })
+           } else {
+               done();
+           }
+       },
+       function (done) {
+           lockClient = awsIoT.device({
+               region: 'us-west-2',
+               protocol: 'wss',
+               port: 443,
+               host: iotGateway
+           });
+           lockClient.on('connect', () => {
+               lockClient.subscribe('repos');
+               console.log('Connected and subscribed to repos');
+               done();
+           })
+       }
+    ], function(err) {
+        console.log(err);
+        cb();
+    });
+}
 
 function checkGitSecret(event, context, callback) {
     let hash, hmac;
@@ -60,64 +92,84 @@ function checkGitSecret(event, context, callback) {
             };
             let lock = {};
             let cont = false;
-            docClient.query(p, function (err, data) {
-                if (err) {
-                    console.log('Got an error querying dynamo');
-                } else if (data.Count > 0) {
-                    // We already have a build lock
-                    lock = data.Items[0];
-
-                    if (lock.end_time === undefined && lock.start_time > (currTime - (5 * 60 * 1000))) {
-                        // There is no end time on the lock and the start time was < 5 minutes ago... Assume another build is going on...
-                        console.log('Currently doing a build... Wait!');
-                        const response = {
-                            statusCode: 409,
-                            body: JSON.stringify({msg: 'Currently doing a build.'})
-                        };
-                        callback(null, response);
-                    } else {
-                        // There has been a build before, so let us do an update...
-                        console.log('Modifying an existing build...');
-                        delete lock['end_time'];
-                        cont = true;
-                    }
-                } else {
-                    // Never built this repo before...
-                    console.log('New build!');
-                    lock.repo_name = repo;
-                    cont = true;
-                }
-                if (cont) {
-                    lock.start_time = (new Date).getTime();
-                    lock.committer = {
-                        name: parsed.head_commit.committer.name,
-                        email: parsed.head_commit.committer.email
-                    };
-                    lock.message = parsed.head_commit.message;
-                    lock.hash = parsed.after;
-                    lock.error = false;
-                    const lockItem = {
-                        TableName: 'build_lock',
-                        Item: lock
-                    };
-                    docClient.put(lockItem, function (err, data) {
-                        if (err) {
-                            console.log('Error creating lock...')
-                        } else {
-                            const sns = new AWS.SNS();
-                            sns.publish(params, function (err, data) {
-                                if (err) {
-                                    console.log(err);
-                                } else {
-                                    console.log('Sent message to trigger build');
-                                }
-                                callback(null, {
-                                    "statusCode": 200
-                                });
-                            });
+            async.series([
+                    function(done) {
+                        if (!lockClient) {
+                            connectLockClient(function() {
+                                done();
+                            })
                         }
-                    })
-                }
+                    },
+                    function(done) {
+                        docClient.query(p, function (err, data) {
+                            let newRepo = false;
+                            if (err) {
+                                console.log('Got an error querying dynamo');
+                            } else if (data.Count > 0) {
+                                // We already have a build lock
+                                lock = data.Items[0];
+                                if (lock.end_time === undefined && lock.start_time > (currTime - (5 * 60 * 1000))) {
+                                    // There is no end time on the lock and the start time was < 5 minutes ago... Assume another build is going on...
+                                    console.log('Currently doing a build... Wait!');
+                                    const response = {
+                                        statusCode: 409,
+                                        body: JSON.stringify({msg: 'Currently doing a build.'})
+                                    };
+                                    callback(null, response);
+                                } else {
+                                    // There has been a build before, so let us do an update...
+                                    console.log('Modifying an existing build...');
+                                    delete lock['end_time'];
+                                    cont = true;
+                                }
+                            } else {
+                                // Never built this repo before...
+                                console.log('New build!');
+                                lock.repo_name = repo;
+                                cont = true;
+                                newRepo = true;
+                            }
+                            if (cont) {
+                                lock.start_time = (new Date).getTime();
+                                lock.committer = {
+                                    name: parsed.head_commit.committer.name,
+                                    email: parsed.head_commit.committer.email
+                                };
+                                lock.message = parsed.head_commit.message;
+                                lock.hash = parsed.after;
+                                lock.error = false;
+                                const lockItem = {
+                                    TableName: 'build_lock',
+                                    Item: lock
+                                };
+                                let type = 'update';
+                                if (newRepo) {
+                                    type = 'new';
+                                }
+                                lockClient.send(JSON.stringify({type: type, payload: lock}));
+                                docClient.put(lockItem, function (err, data) {
+                                    if (err) {
+                                        done(err);
+                                    } else {
+                                        const sns = new AWS.SNS();
+                                        sns.publish(params, function (err, data) {
+                                            if (err) {
+                                                console.log(err);
+                                            } else {
+                                                console.log('Sent message to trigger build');
+                                            }
+                                            callback(null, {
+                                                "statusCode": 200
+                                            });
+                                            done();
+                                        });
+                                    }
+                                })
+                            }
+                        });
+                    }
+                ], function(err) {
+                    console.log(err);
             });
         } else {
             const url = _.find(config, function (c) {
@@ -435,7 +487,7 @@ module.exports.iot = (event, context, callback) => {
     } else {
         generateCredentials(callback);
     }
-}
+};
 
 function getIotGateway(cb) {
     const iot = new AWS.Iot();
