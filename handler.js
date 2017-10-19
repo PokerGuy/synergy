@@ -91,86 +91,73 @@ function checkGitSecret(event, context, callback) {
             };
             let lock = {};
             let cont = false;
-            async.series([
-                function (done) {
-                    if (!lockClient) {
-                        connectLockClient(function () {
-                            done();
-                        })
+            docClient.query(p, function (err, data) {
+                let newRepo = false;
+                if (err) {
+                    done(err);
+                } else if (data.Count > 0) {
+                    // We already have a build lock
+                    lock = data.Items[0];
+                    if (lock.end_time === undefined && lock.start_time > (currTime - (5 * 60 * 1000))) {
+                        // There is no end time on the lock and the start time was < 5 minutes ago... Assume another build is going on...
+                        console.log('Currently doing a build... Wait!');
+                        const response = {
+                            statusCode: 409,
+                            body: JSON.stringify({msg: 'Currently doing a build.'})
+                        };
+                        callback(null, response);
+                    } else {
+                        // There has been a build before, so let us do an update...
+                        console.log('Modifying an existing build...');
+                        delete lock['end_time'];
+                        cont = true;
                     }
-                },
-                function (done) {
-                    docClient.query(p, function (err, data) {
-                        let newRepo = false;
-                        if (err) {
-                            done(err);
-                        } else if (data.Count > 0) {
-                            // We already have a build lock
-                            lock = data.Items[0];
-                            if (lock.end_time === undefined && lock.start_time > (currTime - (5 * 60 * 1000))) {
-                                // There is no end time on the lock and the start time was < 5 minutes ago... Assume another build is going on...
-                                console.log('Currently doing a build... Wait!');
-                                const response = {
-                                    statusCode: 409,
-                                    body: JSON.stringify({msg: 'Currently doing a build.'})
-                                };
-                                callback(null, response);
-                            } else {
-                                // There has been a build before, so let us do an update...
-                                console.log('Modifying an existing build...');
-                                delete lock['end_time'];
-                                cont = true;
-                            }
-                        } else {
-                            // Never built this repo before...
-                            console.log('New build!');
-                            lock.repo_name = repo;
-                            cont = true;
-                            newRepo = true;
-                        }
-                        if (cont) {
-                            lock.start_time = (new Date).getTime();
-                            lock.committer = {
-                                name: parsed.head_commit.committer.name,
-                                email: parsed.head_commit.committer.email
-                            };
-                            lock.message = parsed.head_commit.message;
-                            lock.hash = parsed.after;
-                            lock.error = false;
-                            const lockItem = {
-                                TableName: 'build_lock',
-                                Item: lock
-                            };
-                            let type = 'update';
-                            if (newRepo) {
-                                type = 'new';
-                            }
-                            lockClient.publish('repos', JSON.stringify({type: type, payload: lock}));
-                            lockClient = null; // This is preventing the event loop from closing and subsequently sending the callback
-                            docClient.put(lockItem, function (err, data) {
-                                if (err) {
-                                    done(err);
-                                } else {
-                                    const sns = new AWS.SNS();
-                                    sns.publish(params, function (err, data) {
-                                        if (err) {
-                                            done(err);
-                                        } else {
-                                            console.log('Sent message to trigger build');
-                                            done();
-                                        }
-                                    });
-                                }
+                } else {
+                    // Never built this repo before...
+                    console.log('New build!');
+                    lock.repo_name = repo;
+                    cont = true;
+                    newRepo = true;
+                }
+                if (cont) {
+                    lock.start_time = (new Date).getTime();
+                    lock.committer = {
+                        name: parsed.head_commit.committer.name,
+                        email: parsed.head_commit.committer.email
+                    };
+                    lock.message = parsed.head_commit.message;
+                    lock.hash = parsed.after;
+                    lock.error = false;
+                    const lockItem = {
+                        TableName: 'build_lock',
+                        Item: lock
+                    };
+                    let type = 'update';
+                    if (newRepo) {
+                        type = 'new';
+                    }
+                    connectLockClient(function () {
+                        lockClient.publish('repos', JSON.stringify({type: type, payload: lock}), function () {
+                            lockClient.end(function () {
+                                docClient.put(lockItem, function (err, data) {
+                                    if (err) {
+                                        console.log(err);
+                                    } else {
+                                        const sns = new AWS.SNS();
+                                        sns.publish(params, function (err, data) {
+                                            if (err) {
+                                                console.log(err);
+                                            } else {
+                                                console.log('Sent message to trigger build');
+                                                callback(null, {"statusCode": 200});
+                                            }
+                                        });
+                                    }
+                                })
                             })
-                        }
+                        });
                     });
                 }
-            ], function (err) {
-                console.log(err);
-                console.log('sending back the 200 response...');
-                lockClient.end(function(err) {
-                    callback(null, {"statusCode": 200});
-                });
             });
         } else {
             const url = _.find(config, function (c) {
