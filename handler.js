@@ -160,7 +160,6 @@ function checkGitSecret(event, context, callback) {
                                             callback(null, {
                                                 "statusCode": 200
                                             });
-                                            done();
                                         });
                                     }
                                 })
