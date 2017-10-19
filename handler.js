@@ -37,8 +37,7 @@ function connectLockClient(cb) {
                host: iotGateway
            });
            lockClient.on('connect', () => {
-               lockClient.subscribe('repos');
-               console.log('Connected and subscribed to repos');
+               console.log('Connected...');
                done();
            })
        }
@@ -146,7 +145,7 @@ function checkGitSecret(event, context, callback) {
                                 if (newRepo) {
                                     type = 'new';
                                 }
-                                lockClient.send(JSON.stringify({type: type, payload: lock}));
+                                lockClient.publish('repos', JSON.stringify({type: type, payload: lock}));
                                 docClient.put(lockItem, function (err, data) {
                                     if (err) {
                                         done(err);
