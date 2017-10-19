@@ -237,6 +237,15 @@ module.exports.deploy = (event, context, callback) => {
             },
             function (done) {
                 cliSetup(done);
+            },
+            function (done) {
+                if (!lockClient) {
+                    connectLockClient(function() {
+                        done();
+                    })
+                } else {
+                    done();
+                }
             }
         ], function (err) {
             if (err) {
@@ -366,6 +375,18 @@ function runScript(event, callback) {
                                 error: errmsg
                             }
                         };
+                        lockClient.publish('repos', JSON.stringify({type: 'update', payload: {
+                            repo_name: msg.git.repo,
+                            start_time: buildTime,
+                            committer: {
+                                name: msg.git.commiter.name,
+                                email: msg.git.commiter.email
+                            },
+                            message: msg.git.commitMessage,
+                            hash: msg.git.commitHash,
+                            end_time: endTime,
+                            error: errmsg
+                        }}));
                         docClient.put(p, function (err, data) {
                             if (err) {
                                 done(err);
