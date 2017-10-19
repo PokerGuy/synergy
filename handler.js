@@ -146,6 +146,7 @@ function checkGitSecret(event, context, callback) {
                                 type = 'new';
                             }
                             lockClient.publish('repos', JSON.stringify({type: type, payload: lock}));
+                            lockClient = null; // This is preventing the event loop from closing and subsequently sending the callback
                             docClient.put(lockItem, function (err, data) {
                                 if (err) {
                                     done(err);
@@ -208,8 +209,6 @@ module.exports.authenticate = (event, context, callback) => {
         checkGitSecret(event, context, callback);
     } else {
         //Lambda is cold, need to decrypt the environmental variable and keep the plain text value in memory...
-        console.log('Encrypted is:');
-        console.log(encrypted);
         const kms = new AWS.KMS({region: 'us-west-2'});
         kms.decrypt({CiphertextBlob: Buffer(encrypted, 'base64')}, (err, data) => {
             if (err) {
