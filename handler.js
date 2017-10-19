@@ -9,43 +9,13 @@ const config = require('./config');
 const _ = require('lodash');
 const axios = require('axios');
 const docClient = new AWS.DynamoDB.DocumentClient({'region': 'us-west-2'});
+const stream = require('./streamAndSave');
 let setupComplete = false;
-const awsIoT = require('aws-iot-device-sdk');
-let lockClient;
 
 //Used to determine if the lambda is hot or cold
 const encrypted = process.env.GIT_SECRET;
 let decrypted;
 let iotGateway;
-
-function connectLockClient(cb) {
-    async.series([
-        function (done) {
-            if (!iotGateway) {
-                getIotGateway(function () {
-                    done();
-                })
-            } else {
-                done();
-            }
-        },
-        function (done) {
-            lockClient = awsIoT.device({
-                region: 'us-west-2',
-                protocol: 'wss',
-                port: 443,
-                host: iotGateway
-            });
-            lockClient.on('connect', () => {
-                console.log('Connected...');
-                done();
-            })
-        }
-    ], function (err) {
-        console.log(err);
-        cb();
-    });
-}
 
 function checkGitSecret(event, context, callback) {
     let hash, hmac;
@@ -136,25 +106,15 @@ function checkGitSecret(event, context, callback) {
                     if (newRepo) {
                         type = 'new';
                     }
-                    connectLockClient(function () {
-                        lockClient.publish('repos', JSON.stringify({type: type, payload: lock}), function () {
-                            lockClient.end(function () {
-                                docClient.put(lockItem, function (err, data) {
-                                    if (err) {
-                                        console.log(err);
-                                    } else {
-                                        const sns = new AWS.SNS();
-                                        sns.publish(params, function (err, data) {
-                                            if (err) {
-                                                console.log(err);
-                                            } else {
-                                                console.log('Sent message to trigger build');
-                                                callback(null, {"statusCode": 200});
-                                            }
-                                        });
-                                    }
-                                })
-                            })
+                    stream.stream(lockItem, 'repos', {type: type, payload: lock}, iotGateway, function() {
+                        const sns = new AWS.SNS();
+                        sns.publish(params, function (err, data) {
+                            if (err) {
+                                console.log(err);
+                            } else {
+                                console.log('Sent message to trigger build');
+                                callback(null, {"statusCode": 200});
+                            }
                         });
                     });
                 }
@@ -205,7 +165,13 @@ module.exports.authenticate = (event, context, callback) => {
                 return callback(err);
             }
             decrypted = data.Plaintext.toString('ascii');
-            checkGitSecret(event, context, callback);
+            if (!iotGateway) {
+                getIotGateway(function() {
+                    checkGitSecret(event, context, callback);
+                })
+            } else {
+                checkGitSecret(event, context, callback);
+            }
         });
     }
 };
@@ -226,8 +192,8 @@ module.exports.deploy = (event, context, callback) => {
                 cliSetup(done);
             },
             function (done) {
-                if (!lockClient) {
-                    connectLockClient(function () {
+                if (!iotGateway) {
+                    getIotGateway(function() {
                         done();
                     })
                 } else {
@@ -362,7 +328,7 @@ function runScript(event, callback) {
                                 error: errmsg
                             }
                         };
-                        lockClient.publish('repos', JSON.stringify({
+                        const update = {
                             type: 'update', payload: {
                                 repo_name: msg.git.repo,
                                 start_time: buildTime,
@@ -375,13 +341,9 @@ function runScript(event, callback) {
                                 end_time: endTime,
                                 error: errmsg
                             }
-                        }));
-                        docClient.put(p, function (err, data) {
-                            if (err) {
-                                done(err);
-                            } else {
-                                done();
-                            }
+                        };
+                        stream.stream(p, 'repos', stream, iotGateway, function() {
+                           done();
                         });
                     },
                     function (done) {
