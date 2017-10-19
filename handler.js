@@ -153,11 +153,11 @@ function checkGitSecret(event, context, callback) {
                                     const sns = new AWS.SNS();
                                     sns.publish(params, function (err, data) {
                                         if (err) {
-                                            console.log(err);
+                                            done(err);
                                         } else {
                                             console.log('Sent message to trigger build');
+                                            done();
                                         }
-                                        done();
                                     });
                                 }
                             })
@@ -166,9 +166,8 @@ function checkGitSecret(event, context, callback) {
                 }
             ], function (err) {
                 console.log(err);
-                callback(null, {
-                    "statusCode": 200
-                });
+                console.log('sending back the 200 response...');
+                callback(null, {"statusCode": 200});
             });
         } else {
             const url = _.find(config, function (c) {
