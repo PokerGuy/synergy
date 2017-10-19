@@ -16,6 +16,9 @@ module.exports.stream = (document, topic, stream, gateway, cb) => {
         },
         function(done) {
             //Stream over IOT
+            console.log('topic ' + topic);
+            console.log('stream ' + stream);
+            console.log('gateway ' + gateway);
             const iotData = new AWS.IotData({ endpoint: gateway });
             const params = {
                 topic: topic,
@@ -24,6 +27,7 @@ module.exports.stream = (document, topic, stream, gateway, cb) => {
             iotData.publish(params, (err, res) => {
                 if (err) done(err);
 
+                console.log('Sent the stream');
                 done();
             })
         }
