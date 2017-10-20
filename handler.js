@@ -345,7 +345,7 @@ function runScript(event, callback) {
                             }
                         };
                         console.log('calling stream and save');
-                        stream.stream(p, 'repos', stream, iotGateway, function () {
+                        stream.stream(p, 'repos', update, iotGateway, function () {
                             console.log('stream and save callback');
                             done();
                         });
