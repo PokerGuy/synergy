@@ -10,6 +10,7 @@ module.exports.stream = (document, topic, stream, gateway, cb) => {
                 if (err) {
                     done(err);
                 } else {
+                    console.log('inserted the document');
                     done();
                 }
             })
@@ -25,16 +26,19 @@ module.exports.stream = (document, topic, stream, gateway, cb) => {
                 payload: JSON.stringify(stream)
             };
             iotData.publish(params, (err, res) => {
-                if (err) done(err);
-
-                console.log('Sent the stream');
-                done();
+                if (err) {
+                    done(err);
+                } else {
+                    console.log('Sent the stream');
+                    done();
+                }
             })
         }
     ], function(err) {
         if (err) {
             console.log(err);
         }
+        console.log('finished the stream and the document');
         cb();
     })
 };

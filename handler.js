@@ -106,7 +106,9 @@ function checkGitSecret(event, context, callback) {
                     if (newRepo) {
                         type = 'new';
                     }
-                    stream.stream(lockItem, 'repos', {type: type, payload: lock}, iotGateway, function() {
+                    console.log('calling stream and save');
+                    stream.stream(lockItem, 'repos', {type: type, payload: lock}, iotGateway, function () {
+                        console.log('inside the stream and save callback');
                         const sns = new AWS.SNS();
                         sns.publish(params, function (err, data) {
                             if (err) {
@@ -166,7 +168,7 @@ module.exports.authenticate = (event, context, callback) => {
             }
             decrypted = data.Plaintext.toString('ascii');
             if (!iotGateway) {
-                getIotGateway(function() {
+                getIotGateway(function () {
                     checkGitSecret(event, context, callback);
                 })
             } else {
@@ -193,7 +195,7 @@ module.exports.deploy = (event, context, callback) => {
             },
             function (done) {
                 if (!iotGateway) {
-                    getIotGateway(function() {
+                    getIotGateway(function () {
                         done();
                     })
                 } else {
@@ -342,8 +344,10 @@ function runScript(event, callback) {
                                 error: errmsg
                             }
                         };
-                        stream.stream(p, 'repos', stream, iotGateway, function() {
-                           done();
+                        console.log('calling stream and save');
+                        stream.stream(p, 'repos', stream, iotGateway, function () {
+                            console.log('stream and save callback');
+                            done();
                         });
                     },
                     function (done) {
@@ -371,6 +375,7 @@ function runScript(event, callback) {
                     if (err) {
                         console.log(err);
                     }
+                    console.log('done with the async parallel block, ending the lambda');
                     callback();
                 });
             });
