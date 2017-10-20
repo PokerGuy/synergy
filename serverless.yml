@@ -242,4 +242,11 @@ resources:
                     - iot:Receive
                   Resource: "*"
         RoleName: stream-function-role
+    pathmapping:
+      Type: AWS::ApiGateway::BasePathMapping
+      Properties:
+        DomainName: ${opt:AWS_ENV}.api.magickpics.com
+        RestApiId:
+          Ref: ApiGatewayRestApi
+        Stage: ${opt:AWS_ENV}
   Outputs:
