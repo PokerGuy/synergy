@@ -245,7 +245,7 @@ resources:
     pathmapping:
       Type: AWS::ApiGateway::BasePathMapping
       Properties:
-        DomainName: ${opt:AWS_ENV}.api.magickpics.com
+        DomainName:  ${file(./serverless.env.yml):${opt:AWS_ENV}.api_url}
         RestApiId:
           Ref: ApiGatewayRestApi
         Stage: ${opt:AWS_ENV}
