@@ -242,11 +242,4 @@ resources:
                     - iot:Receive
                   Resource: "*"
         RoleName: stream-function-role
-    pathmapping:
-      Type: AWS::ApiGateway::BasePathMapping
-      Properties:
-        DomainName:  ${file(./serverless.env.yml):${opt:AWS_ENV}.api_url}
-        RestApiId:
-          Ref: ApiGatewayRestApi
-        Stage: ${opt:AWS_ENV}
   Outputs:

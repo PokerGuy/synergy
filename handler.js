@@ -238,148 +238,132 @@ function runScript(event, callback) {
             error: false
         }
     };
-    docClient.put(params, function (err, data) {
-        if (err) {
-            console.log('Error creating build entry...')
-        } else {
-            console.log('Created the build entry...');
-            const cloneScript = spawn('sh', ['./clone.sh', msg.git.clone_url, process.env.AWS_ENV]);
+    const update = {
+        type: 'update', payload: params.Item
+    };
+    stream.stream(params, 'repos/' + msg.git.repo, update, iotGateway, function() {
+        console.log('Created the build entry...');
+        const cloneScript = spawn('sh', ['./clone.sh', msg.git.clone_url, process.env.AWS_ENV]);
 
-            cloneScript.stdout.on('data', function (data) {
-                console.log(data.toString());
-                const p = {
-                    TableName: 'build_step',
-                    Item: {
-                        repo_name: msg.git.repo,
-                        build_start: buildTime,
-                        build_step_time: (new Date).getTime(),
-                        output: data.toString(),
-                        type: 'stdout'
+        cloneScript.stdout.on('data', function (data) {
+            console.log(data.toString());
+            const p = {
+                TableName: 'build_step',
+                Item: {
+                    repo_name: msg.git.repo,
+                    build_start: buildTime,
+                    build_step_time: (new Date).getTime(),
+                    output: data.toString(),
+                    type: 'stdout'
 
-                    }
-                };
-                docClient.put(p, function (err, data) {
-                    if (err) {
-                        console.log(err);
-                    }
-                })
-            });
-
-            cloneScript.stderr.on('data', function (data) {
-                console.log('STDERR: ' + data.toString());
-                const p = {
-                    TableName: 'build_step',
-                    Item: {
-                        repo_name: msg.git.repo,
-                        build_start: buildTime,
-                        build_step_time: (new Date).getTime(),
-                        output: data.toString(),
-                        type: 'stderr'
-
-                    }
-                };
-                docClient.put(p, function (err, data) {
-                    if (err) {
-                        console.log(err);
-                    }
-                })
-            });
-
-            cloneScript.on('exit', function (code) {
-                const endTime = (new Date).getTime();
-                let errmsg = false;
-                if (code !== 0) {
-                    errmsg = true;
                 }
-                async.parallel([
-                    function (done) {
-                        const p = {
-                            TableName: 'build_step',
-                            Item: {
-                                repo_name: msg.git.repo,
-                                build_start: buildTime,
-                                build_step_time: (new Date).getTime(),
-                                output: 'Exited with code ' + code.toString(),
-                                type: 'end'
-
-                            }
-                        };
-                        docClient.put(p, function (err, data) {
-                            if (err) {
-                                done(err);
-                            } else {
-                                console.log('Exited with code ' + code.toString());
-                                console.log('Ending the Lambda now...');
-                                done();
-                            }
-                        });
-                    },
-                    function (done) {
-                        const p = {
-                            TableName: 'build_lock',
-                            Item: {
-                                repo_name: msg.git.repo,
-                                start_time: buildTime,
-                                committer: {
-                                    name: msg.git.commiter.name,
-                                    email: msg.git.commiter.email
-                                },
-                                message: msg.git.commitMessage,
-                                hash: msg.git.commitHash,
-                                end_time: endTime,
-                                error: errmsg
-                            }
-                        };
-                        const update = {
-                            type: 'update', payload: {
-                                repo_name: msg.git.repo,
-                                start_time: buildTime,
-                                committer: {
-                                    name: msg.git.commiter.name,
-                                    email: msg.git.commiter.email
-                                },
-                                message: msg.git.commitMessage,
-                                hash: msg.git.commitHash,
-                                end_time: endTime,
-                                error: errmsg
-                            }
-                        };
-                        console.log('calling stream and save');
-                        stream.stream(p, 'repos', update, iotGateway, function () {
-                            console.log('stream and save callback');
-                            done();
-                        });
-                    },
-                    function (done) {
-                        const p = {
-                            TableName: 'builds',
-                            Item: {
-                                repo_name: msg.git.repo,
-                                build_start: buildTime,
-                                end_time: endTime,
-                                committer: {name: msg.git.commiter.name, email: msg.git.commiter.email},
-                                message: msg.git.commitMessage,
-                                hash: msg.git.commitHash,
-                                error: errmsg
-                            }
-                        };
-                        docClient.put(p, function (err, data) {
-                            if (err) {
-                                done(err);
-                            } else {
-                                done();
-                            }
-                        });
-                    }
-                ], function (err) {
-                    if (err) {
-                        console.log(err);
-                    }
-                    console.log('done with the async parallel block, ending the lambda');
-                    callback();
-                });
+            };
+            const update = {
+                type: 'new', payload: p.Item
+            };
+            stream.stream(p, 'repos/' + msg.git.repo + '/' + buildTime, update, iotGateway, function() {
             });
-        }
+        });
+
+        cloneScript.stderr.on('data', function (data) {
+            console.log('STDERR: ' + data.toString());
+            const p = {
+                TableName: 'build_step',
+                Item: {
+                    repo_name: msg.git.repo,
+                    build_start: buildTime,
+                    build_step_time: (new Date).getTime(),
+                    output: data.toString(),
+                    type: 'stderr'
+
+                }
+            };
+            const update = {
+                type: 'new', payload: p.Item
+            };
+            stream.stream(p, 'repos/' + msg.git.repo + '/' + buildTime, update, iotGateway, function() {
+            });
+        });
+
+        cloneScript.on('exit', function (code) {
+            const endTime = (new Date).getTime();
+            let errmsg = false;
+            if (code !== 0) {
+                errmsg = true;
+            }
+            async.parallel([
+                function (done) {
+                    const p = {
+                        TableName: 'build_step',
+                        Item: {
+                            repo_name: msg.git.repo,
+                            build_start: buildTime,
+                            build_step_time: (new Date).getTime(),
+                            output: 'Exited with code ' + code.toString(),
+                            type: 'end'
+
+                        }
+                    };
+                    const update = {
+                        type: 'new', payload: p.Item
+                    };
+                    stream.stream(p, 'repos/' + msg.git.repo + '/' + buildTime, update, iotGateway, function() {
+                        done();
+                    });
+                },
+                function (done) {
+                    const p = {
+                        TableName: 'build_lock',
+                        Item: {
+                            repo_name: msg.git.repo,
+                            start_time: buildTime,
+                            committer: {
+                                name: msg.git.commiter.name,
+                                email: msg.git.commiter.email
+                            },
+                            message: msg.git.commitMessage,
+                            hash: msg.git.commitHash,
+                            end_time: endTime,
+                            error: errmsg
+                        }
+                    };
+                    const update = {
+                        type: 'update', payload: p.Item
+                    };
+                    console.log('calling stream and save');
+                    stream.stream(p, 'repos', update, iotGateway, function () {
+                        console.log('stream and save callback');
+                        done();
+                    });
+                },
+                function (done) {
+                    const p = {
+                        TableName: 'builds',
+                        Item: {
+                            repo_name: msg.git.repo,
+                            build_start: buildTime,
+                            end_time: endTime,
+                            committer: {name: msg.git.commiter.name, email: msg.git.commiter.email},
+                            message: msg.git.commitMessage,
+                            hash: msg.git.commitHash,
+                            error: errmsg
+                        }
+                    };
+                    const update = {
+                        type: 'update', payload: p.Item
+                    };
+                    stream.stream(p, 'repos/' + msg.git.repo, update, iotGateway, function() {
+                        done();
+                    });
+                }
+            ], function (err) {
+                if (err) {
+                    console.log(err);
+                }
+                console.log('done with the async parallel block, ending the lambda');
+                callback();
+            });
+        });
     });
 }
 
