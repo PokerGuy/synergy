@@ -15,6 +15,7 @@ let setupComplete = false;
 //Used to determine if the lambda is hot or cold
 const encrypted = process.env.GIT_SECRET;
 let decrypted;
+let token;
 let iotGateway;
 
 function checkGitSecret(event, context, callback) {
@@ -161,13 +162,31 @@ module.exports.authenticate = (event, context, callback) => {
     } else {
         //Lambda is cold, need to decrypt the environmental variable and keep the plain text value in memory...
         const kms = new AWS.KMS({region: 'us-west-2'});
-        kms.decrypt({CiphertextBlob: Buffer(encrypted, 'base64')}, (err, data) => {
-            if (err) {
-                console.log('Decrypt error:', err);
-                return callback(err);
+        async.parallel([
+            function(done) {
+                kms.decrypt({CiphertextBlob: Buffer(encrypted, 'base64')}, (err, data) => {
+                    if (err) {
+                        console.log('Decrypt error:', err);
+                        done(err);
+                    }
+                    decrypted = data.Plaintext.toString('ascii');
+                    done();
+                })
+            },
+            function(done) {
+                kms.decrypt({CiphertextBlob: Buffer(process.env.GIT_TOKEN, 'base64')}, (err, data) => {
+                    if (err) {
+                        console.log('Decrypt error:', err);
+                        done(err);
+                    }
+                    token = data.Plaintext.toString('ascii');
+                    done();
+                })
             }
-            decrypted = data.Plaintext.toString('ascii');
-            if (!iotGateway) {
+        ], function(err) {
+            if (err) {
+                return callback(err);
+            } else if (!iotGateway) {
                 getIotGateway(function () {
                     checkGitSecret(event, context, callback);
                 })
@@ -243,7 +262,10 @@ function runScript(event, callback) {
     };
     stream.stream(params, 'repos/' + msg.git.repo, update, iotGateway, function() {
         console.log('Created the build entry...');
-        const cloneScript = spawn('sh', ['./clone.sh', msg.git.clone_url, process.env.AWS_ENV]);
+        // clone url looks like: "https://github.com/PokerGuy/synergy.git"
+        // Want it to be https://token@github.com/PokerGuy/synergy.git
+        const tokenized = `${msg.git.clone_url.substring(0, 8)}${token}@${msg.git.clone_url.substring(8)}`;
+        const cloneScript = spawn('sh', ['./clone.sh', tokenized, process.env.AWS_ENV]);
 
         cloneScript.stdout.on('data', function (data) {
             console.log(data.toString());
