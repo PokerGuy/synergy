@@ -14,8 +14,8 @@ let setupComplete = false;
 
 //Used to determine if the lambda is hot or cold
 const encrypted = process.env.GIT_SECRET;
-let decrypted;
-let token;
+let decrypted = null;
+let token = null;
 let iotGateway;
 
 function checkGitSecret(event, context, callback) {
@@ -155,12 +155,13 @@ function checkGitSecret(event, context, callback) {
 }
 
 module.exports.authenticate = (event, context, callback) => {
-    if (decrypted && token) {
+    if (decrypted !== null && token !== null) {
         //The lambda is warm and decrypted has the secret value in plain text in memory
         //Don't be stupid and expose it in a log!
         checkGitSecret(event, context, callback);
     } else {
         //Lambda is cold, need to decrypt the environmental variable and keep the plain text value in memory...
+        console.log('Need to decrypt the secret and token first...');
         const kms = new AWS.KMS({region: 'us-west-2'});
         async.parallel([
             function(done) {
@@ -229,6 +230,7 @@ module.exports.deploy = (event, context, callback) => {
                 console.log(err);
                 callback();
             } else {
+                setupComplete = true;
                 console.log('Lambda is warm -- call the shellscript...');
                 runScript(event, callback);
             }
