@@ -174,11 +174,13 @@ module.exports.authenticate = (event, context, callback) => {
                 })
             },
             function(done) {
+                console.log(`The decrypted token is: ${process.env.GIT_TOKEN}`);
                 kms.decrypt({CiphertextBlob: Buffer(process.env.GIT_TOKEN, 'base64')}, (err, data) => {
                     if (err) {
                         console.log('Decrypt error:', err);
                         done(err);
                     }
+                    console.log('Successfully decrypted the token');
                     token = data.Plaintext.toString('ascii');
                     done();
                 })
@@ -264,6 +266,9 @@ function runScript(event, callback) {
         console.log('Created the build entry...');
         // clone url looks like: "https://github.com/PokerGuy/synergy.git"
         // Want it to be https://token@github.com/PokerGuy/synergy.git
+        if (token === undefined) {
+            console.log('oh no... we do not have a token');
+        }
         const tokenized = `${msg.git.clone_url.substring(0, 8)}${token}@${msg.git.clone_url.substring(8)}`;
         const cloneScript = spawn('sh', ['./clone.sh', tokenized, process.env.AWS_ENV]);
 
@@ -513,7 +518,7 @@ function generateCredentials(callback) {
             callback(null, res);
         })
     })
-};
+}
 
 const getRegion = (iotEndpoint) => {
     const partial = iotEndpoint.replace('.amazonaws.com', '');
