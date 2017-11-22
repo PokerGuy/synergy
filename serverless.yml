@@ -130,6 +130,24 @@ resources:
               Principal: "*"
               Action: s3:GetObject
               Resource: "arn:aws:s3:::${file(./serverless.env.yml):${opt:AWS_ENV}.subdomain}.build.magickpics.com/*"
+    magickBucket:
+      Type: 'AWS::S3::Bucket'
+      Properties:
+        BucketName: ${file(./serverless.env.yml):${opt:AWS_ENV}.magick_url}
+        WebsiteConfiguration:
+          IndexDocument: index.html
+    magickBucketPolicy:
+      Type: "AWS::S3::BucketPolicy"
+      Properties:
+        Bucket: ${file(./serverless.env.yml):${opt:AWS_ENV}.magick_url}
+        PolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+            -
+              Effect: Allow
+              Principal: "*"
+              Action: s3:GetObject
+              Resource: "arn:aws:s3:::${file(./serverless.env.yml):${opt:AWS_ENV}.magick_url}/*"
     lambdaKey:
       Type: AWS::KMS::Key
       Properties:
