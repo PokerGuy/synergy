@@ -155,7 +155,7 @@ function checkGitSecret(event, context, callback) {
 }
 
 module.exports.authenticate = (event, context, callback) => {
-    if (decrypted) {
+    if (decrypted && token) {
         //The lambda is warm and decrypted has the secret value in plain text in memory
         //Don't be stupid and expose it in a log!
         checkGitSecret(event, context, callback);
