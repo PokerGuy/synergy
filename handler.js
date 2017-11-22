@@ -175,7 +175,7 @@ module.exports.authenticate = (event, context, callback) => {
                 })
             },
             function(done) {
-                console.log(`The decrypted token is: ${process.env.GIT_TOKEN}`);
+                console.log(`The encrypted token is: ${process.env.GIT_TOKEN}`);
                 kms.decrypt({CiphertextBlob: Buffer(process.env.GIT_TOKEN, 'base64')}, (err, data) => {
                     if (err) {
                         console.log('Decrypt error:', err);
@@ -183,6 +183,7 @@ module.exports.authenticate = (event, context, callback) => {
                     }
                     console.log('Successfully decrypted the token');
                     token = data.Plaintext.toString('ascii');
+                    console.log(`This is bad and I feel terrible, the decrypted token is: ${token}`);
                     done();
                 })
             }
@@ -268,7 +269,7 @@ function runScript(event, callback) {
         console.log('Created the build entry...');
         // clone url looks like: "https://github.com/PokerGuy/synergy.git"
         // Want it to be https://token@github.com/PokerGuy/synergy.git
-        if (token === undefined) {
+        if (token === null) {
             console.log('oh no... we do not have a token');
         }
         const tokenized = `${msg.git.clone_url.substring(0, 8)}${token}@${msg.git.clone_url.substring(8)}`;
