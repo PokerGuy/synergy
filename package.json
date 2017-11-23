@@ -20,6 +20,7 @@
     "tar-fs": "^1.16.0"
   },
   "devDependencies": {
-    "aws-sdk": "^2.130.0"
+    "aws-sdk": "^2.130.0",
+    "eslint": "^4.11.0"
   }
 }
