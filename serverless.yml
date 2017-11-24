@@ -148,6 +148,10 @@ resources:
               Principal: "*"
               Action: s3:GetObject
               Resource: "arn:aws:s3:::${file(./serverless.env.yml):${opt:AWS_ENV}.magick_url}/*"
+    uploadBucket:
+      Type: 'AWS::S3::Bucket'
+      Properties:
+        BucketName: ${opt:AWS_ENV}-magickpics-uploads
     lambdaKey:
       Type: AWS::KMS::Key
       Properties:
