@@ -154,11 +154,9 @@ resources:
         BucketName: ${opt:AWS_ENV}-magickpics-uploads
         CorsConfiguration:
           CorsRules:
-            - AllowedOrigins: *
-            - AllowedHeaders: *
-            - AllowedMethods:
-              - GET
-              - PUT
+            - AllowedHeaders: ['*']
+              AllowedMethods: [GET,PUT]
+              AllowedOrigins: ['*']
     lambdaKey:
       Type: AWS::KMS::Key
       Properties:
