@@ -56,6 +56,31 @@ provider:
         - sts:AssumeRole
       Resource:
         - "*"
+    - Effect: "Allow"
+      Action:
+        - acm:ListCertificates
+      Resource:
+        - "*"
+    - Effect: "Allow"
+      Action:
+        - apigateway:GET
+        - apigateway:DELETE
+        - apigateway:POST
+      Resource:
+        - "*"
+    - Effect: "Allow"
+      Action:
+        - cloudfront:UpdateDistribution
+      Resource:
+        - "*"
+    - Effect: "Allow"
+      Action:
+        - route53:ListHostedZones
+        - route53:ChangeResourceRecordSets
+        - route53:GetHostedZone
+        - route53:ListResourceRecordSets
+      Resource:
+        - "*"
   environment:
     AWS_ENV: ${opt:AWS_ENV}
     GIT_SECRET: ${file(./serverless.env.yml):${opt:AWS_ENV}.git_secret}
