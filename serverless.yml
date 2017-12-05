@@ -110,6 +110,15 @@ functions:
           method: get
           cors: true
 
+plugins:
+  - serverless-domain-manager
+
+custom:
+  customDomain:
+    domainName: ${file(./serverless.env.yml):${opt:AWS_ENV}.api_url}
+    basePath: 'synergy'
+    createRoute53Record: true
+
 resources:
   Resources:
     websiteBucket:

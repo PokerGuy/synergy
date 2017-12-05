@@ -1,6 +1,6 @@
 module.exports = [
-    {env: 'test', url: 'https://9viabtrqyc.execute-api.us-west-2.amazonaws.com/test/githook'},
-    {env: 'prod', url: 'https://wiel3px1o9.execute-api.us-west-2.amazonaws.com/prod/githook'}
+    {env: 'test', url: 'https://test.api.magickpics.com/synergy/githook'},
+    {env: 'prod', url: 'https://api.magickpics.com/synergy/githook'}
 ];
 
-//Endpoint for sandbox https://r2hx7xn3i2.execute-api.us-west-2.amazonaws.com/sandbox/githook
+//Endpoint for sandbox https://sandbox.api.magickpics.com/synergy/githook
