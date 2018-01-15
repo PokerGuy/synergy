@@ -17,8 +17,8 @@ provider:
       Resource: 'arn:aws:kms:us-west-2:${file(./serverless.env.yml):${opt:AWS_ENV}.aws_account_number}:key/${file(./serverless.env.yml):${opt:AWS_ENV}.key_guid}'
     - Effect: "Allow"
       Action:
-        - "sns:Publish"
-      Resource: 'arn:aws:sns:us-west-2:${file(./serverless.env.yml):${opt:AWS_ENV}.aws_account_number}:${opt:AWS_ENV}-clone'
+        - "sns:*"
+      Resource: "*"
     - Effect: "Allow"
       Action:
         - "cloudformation:*"
