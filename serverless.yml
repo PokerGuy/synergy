@@ -81,6 +81,11 @@ provider:
         - route53:ListResourceRecordSets
       Resource:
         - "*"
+    - Effect: "Allow"
+      Action:
+        - events:PutRule
+      Resource:
+        - "*"
   environment:
     AWS_ENV: ${opt:AWS_ENV}
     GIT_SECRET: ${file(./serverless.env.yml):${opt:AWS_ENV}.git_secret}
