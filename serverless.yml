@@ -83,7 +83,7 @@ provider:
         - "*"
     - Effect: "Allow"
       Action:
-        - events:PutRule
+        - events:*
       Resource:
         - "*"
   environment:
