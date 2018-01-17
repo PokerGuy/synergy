@@ -89,6 +89,8 @@ provider:
     - Effect: "Allow"
       Action:
         - application-autoscaling:*
+      Resource:
+        - "*"
   environment:
     AWS_ENV: ${opt:AWS_ENV}
     GIT_SECRET: ${file(./serverless.env.yml):${opt:AWS_ENV}.git_secret}
