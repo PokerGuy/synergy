@@ -2,9 +2,9 @@
 CLONE_URL=$1
 AWS_ENV=$2
 
-rm -rf /tmp/clone
-
 cd /tmp
+
+rm -r *
 
 if [ "$AWS_ENV" == "prod" ]; then
     git clone -b master --single-branch $CLONE_URL clone
