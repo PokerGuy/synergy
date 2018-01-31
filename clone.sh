@@ -2,8 +2,9 @@
 CLONE_URL=$1
 AWS_ENV=$2
 
-cd /tmp
+rm -rf /tmp/clone
 
+cd /tmp
 
 if [ "$AWS_ENV" == "prod" ]; then
     git clone -b master --single-branch $CLONE_URL clone
@@ -16,9 +17,3 @@ cd /tmp/clone
 echo "Running the deploy script"
 
 ./deploy.sh $AWS_ENV
-
-echo "Clean up"
-
-cd /tmp
-
-rm -r *
