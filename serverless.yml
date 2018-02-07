@@ -252,6 +252,14 @@ resources:
               Action:
                 - "kms:Decrypt"
               Resource: "*"
+            -
+              Sid: "Decrypt From Metadata"
+              Effect: "Allow"
+              Principal:
+                AWS: "arn:aws:iam::${file(./serverless.env.yml):${opt:AWS_ENV}.aws_account_number}:role/meta-data-${opt:AWS_ENV}-us-west-2-lambdaRole"
+              Action:
+                - "kms:Decrypt"
+              Resource: "*"
     buildLock:
       Type: AWS::DynamoDB::Table
       Properties:
