@@ -152,43 +152,43 @@ functions:
 
 plugins:
   - serverless-domain-manager
-  - serverless-dynamodb-autoscaling
+  #- serverless-dynamodb-autoscaling
 
 custom:
   customDomain:
     domainName: ${file(./serverless.env.yml):${opt:AWS_ENV}.api_url}
     basePath: 'synergy'
     createRoute53Record: true
-  capacities:
-    - table: buildLock
-      read:
-        minimum: 1
-        maximum: 200
-        usage: 0.75
-      write:
-        minimum: 1
-        maximum: 200
-        usage: 0.75
-    - table: builds
-      read:
-        minimum: 1
-        maximum: 200
-        usage: 0.75
-      write:
-        minimum: 1
-        maximum: 200
-        usage: 0.75
-    - table: buildStep
-      index:
-        - BuildStart
-      read:
-        minimum: 1
-        maximum: 200
-        usage: 0.75
-      write:
-        minimum: 1
-        maximum: 200
-        usage: 0.75
+  #capacities:
+  #  - table: buildLock
+  #    read:
+  #      minimum: 1
+  #      maximum: 200
+  #      usage: 0.5
+  #    write:
+  #      minimum: 1
+  #      maximum: 200
+  #      usage: 0.5
+  #  - table: builds
+  #    read:
+  #      minimum: 1
+  #      maximum: 200
+  #      usage: 0.5
+  #    write:
+  #      minimum: 1
+  #      maximum: 200
+  #      usage: 0.5
+  #  - table: buildStep
+  #    index:
+  #      - BuildStart
+  #    read:
+  #      minimum: 1
+  #      maximum: 200
+  #      usage: 0.55
+  #    write:
+  #      minimum: 1
+  #      maximum: 200
+  #      usage: 0.5
 
 resources:
   Resources:
