@@ -2,7 +2,7 @@
 CLONE_URL=$1
 AWS_ENV=$2
 
-rm -rf /tmp/clone
+rm -rf /tmp/clone/*
 
 cd /tmp
 
@@ -17,3 +17,7 @@ cd /tmp/clone
 echo "Running the deploy script"
 
 ./deploy.sh $AWS_ENV
+
+echo "Cleaning the /tmp directory"
+
+rm -rf /tmp/*
