@@ -101,6 +101,7 @@ provider:
     GIT_SECRET: ${file(./serverless.env.yml):${opt:AWS_ENV}.git_secret}
     GIT_TOKEN: ${file(./serverless.env.yml):${opt:AWS_ENV}.github_token}
     AWS_ACCOUNT_NUMBER: ${file(./serverless.env.yml):${opt:AWS_ENV}.aws_account_number}
+    IOT_ENDPOINT: ${file(./serverless.env.yml):${opt:AWS_ENV}.iot_endpoint}
 
 
 package:
@@ -112,6 +113,7 @@ package:
 
 functions:
   githook:
+    memorySize: 128
     handler: handler.authenticate
     events:
       - http:

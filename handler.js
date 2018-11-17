@@ -16,7 +16,6 @@ let setupComplete = false;
 const encrypted = process.env.GIT_SECRET;
 let decrypted;
 let token;
-let iotGateway;
 
 function checkGitSecret(event, context, callback) {
     let hash;
@@ -451,29 +450,11 @@ module.exports.steps = (event, context, callback) => {
 };
 
 module.exports.iot = (event, context, callback) => {
-    if (!iotGateway) {
-        getIotGateway(() => {
-            generateCredentials(callback);
-        })
-    } else {
-        generateCredentials(callback);
-    }
+    generateCredentials(callback);
 };
 
-function getIotGateway(cb) {
-    const iot = new AWS.Iot();
-    iot.describeEndpoint({}, (err, data) => {
-        if (err) return callback(err);
-
-        iotGateway = data.endpointAddress;
-        cb();
-    })
-}
-
 function generateCredentials(callback) {
-    const region = getRegion(iotGateway);
     const sts = new AWS.STS();
-    const roleName = "IOTRole";
     // get the account id which will be used to assume a role
     sts.getCallerIdentity({}, (err, data) => {
         if (err) return callback(err);
@@ -492,7 +473,7 @@ function generateCredentials(callback) {
                     "Access-Control-Allow-Origin": "*"
                 },
                 body: JSON.stringify({
-                    iotEndpoint: iotGateway,
+                    iotEndpoint: process.env.IOT_ENDPOINT,
                     region: region,
                     accessKey: data.Credentials.AccessKeyId,
                     secretKey: data.Credentials.SecretAccessKey,
@@ -503,12 +484,6 @@ function generateCredentials(callback) {
         })
     })
 }
-
-const getRegion = (iotEndpoint) => {
-    const partial = iotEndpoint.replace(".amazonaws.com", "");
-    const iotIndex = iotEndpoint.indexOf("iot");
-    return partial.substring(iotIndex + 4);
-};
 
 const getRandomInt = () => {
     return Math.floor(Math.random() * 100000000);
