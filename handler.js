@@ -167,13 +167,7 @@ module.exports.authenticate = (event, context, callback) => {
                 return callback(err);
             }
             decrypted = data.Plaintext.toString("ascii");
-            if (!iotGateway) {
-                getIotGateway(() => {
-                    checkGitSecret(event, context, callback);
-                })
-            } else {
-                checkGitSecret(event, context, callback);
-            }
+            checkGitSecret(event, context, callback);
         });
     }
 };
