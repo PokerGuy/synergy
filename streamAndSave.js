@@ -2,7 +2,7 @@ const AWS = require('aws-sdk');
 const async = require('async');
 const docClient = new AWS.DynamoDB.DocumentClient({'region': 'us-west-2'});
 
-module.exports.stream = (document, topic, stream, gateway, cb) => {
+module.exports.stream = (document, topic, stream, cb) => {
     async.parallel([
         function(done) {
             //Store in Dynamo
@@ -19,8 +19,7 @@ module.exports.stream = (document, topic, stream, gateway, cb) => {
             //Stream over IOT
             console.log('topic ' + topic);
             console.log('stream ' + stream);
-            console.log('gateway ' + gateway);
-            const iotData = new AWS.IotData({ endpoint: gateway });
+            const iotData = new AWS.IotData({ endpoint: process.env.IOT_GATEWAY });
             const params = {
                 topic: topic,
                 payload: JSON.stringify(stream)
