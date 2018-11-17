@@ -474,7 +474,7 @@ function generateCredentials(callback) {
                 },
                 body: JSON.stringify({
                     iotEndpoint: process.env.IOT_ENDPOINT,
-                    region: region,
+                    region: process.env.REGION,
                     accessKey: data.Credentials.AccessKeyId,
                     secretKey: data.Credentials.SecretAccessKey,
                     sessionToken: data.Credentials.SessionToken

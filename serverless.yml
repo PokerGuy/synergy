@@ -102,6 +102,7 @@ provider:
     GIT_TOKEN: ${file(./serverless.env.yml):${opt:AWS_ENV}.github_token}
     AWS_ACCOUNT_NUMBER: ${file(./serverless.env.yml):${opt:AWS_ENV}.aws_account_number}
     IOT_ENDPOINT: ${file(./serverless.env.yml):${opt:AWS_ENV}.iot_endpoint}
+    REGION: us-west-2
 
 
 package:
