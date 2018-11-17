@@ -16,6 +16,7 @@ let setupComplete = false;
 const encrypted = process.env.GIT_SECRET;
 let decrypted;
 let token;
+let iotGateway;
 
 function checkGitSecret(event, context, callback) {
     let hash;
@@ -108,7 +109,7 @@ function checkGitSecret(event, context, callback) {
                         type = "new";
                     }
                     console.log("calling stream and save");
-                    stream.stream(lockItem, "repos", {type: type, payload: lock}, () => {
+                    stream.stream(lockItem, "repos", {type: type, payload: lock}, iotGateway, () => {
                         const sns = new AWS.SNS();
                         sns.publish(params, (err, data) => {
                             if (err) {
@@ -167,7 +168,13 @@ module.exports.authenticate = (event, context, callback) => {
                 return callback(err);
             }
             decrypted = data.Plaintext.toString("ascii");
-            checkGitSecret(event, context, callback);
+            if (!iotGateway) {
+                getIotGateway(() => {
+                    checkGitSecret(event, context, callback);
+                })
+            } else {
+                checkGitSecret(event, context, callback);
+            }
         });
     }
 };
@@ -188,7 +195,13 @@ module.exports.deploy = (event, context, callback) => {
                 cliSetup(done);
             },
             (done) => {
-                done();
+                if (!iotGateway) {
+                    getIotGateway(() => {
+                        done();
+                    })
+                } else {
+                    done();
+                }
             }
         ], (err) => {
             if (err) {
@@ -241,7 +254,7 @@ function runScript(event, callback) {
     const update = {
         type: "update", payload: params.Item
     };
-    stream.stream(params, `repos/${msg.git.repo}`, update, () => {
+    stream.stream(params, `repos/${msg.git.repo}`, update, iotGateway, () => {
         console.log("Created the build entry...");
         const tokenized = `${msg.git.clone_url.substring(0, 8)}${token}@${msg.git.clone_url.substring(8)}`;
         const cloneScript = spawn("sh", ["./clone.sh", tokenized, process.env.AWS_ENV]);
@@ -262,7 +275,7 @@ function runScript(event, callback) {
             const update2 = {
                 type: "new", payload: p.Item
             };
-            stream.stream(p, `repos/${msg.git.repo}/${buildTime}`, update2, () => {
+            stream.stream(p, `repos/${msg.git.repo}/${buildTime}`, update2, iotGateway, () => {
             });
         });
 
@@ -282,7 +295,7 @@ function runScript(event, callback) {
             const update = {
                 type: "new", payload: p.Item
             };
-            stream.stream(p, `repos/${msg.git.repo}/${buildTime}`, update, () => {
+            stream.stream(p, `repos/${msg.git.repo}/${buildTime}`, update, iotGateway, () => {
             });
         });
 
@@ -308,7 +321,7 @@ function runScript(event, callback) {
                     const update = {
                         type: "new", payload: p.Item
                     };
-                    stream.stream(p, `repos/${msg.git.repo}/${buildTime}`, update, () => {
+                    stream.stream(p, `repos/${msg.git.repo}/${buildTime}`, update, iotGateway, () => {
                         done();
                     });
                 },
@@ -331,7 +344,7 @@ function runScript(event, callback) {
                     const update = {
                         type: "update", payload: p.Item
                     };
-                    stream.stream(p, "repos", update, () => {
+                    stream.stream(p, "repos", update, iotGateway, () => {
                         done();
                     });
                 },
@@ -351,7 +364,7 @@ function runScript(event, callback) {
                     const update = {
                         type: "update", payload: p.Item
                     };
-                    stream.stream(p, `repos/${msg.git.repo}`, update, () => {
+                    stream.stream(p, `repos/${msg.git.repo}`, update, iotGateway, () => {
                         done();
                     });
                 }
@@ -438,7 +451,13 @@ module.exports.steps = (event, context, callback) => {
 };
 
 module.exports.iot = (event, context, callback) => {
-    generateCredentials(callback);
+    if (!iotGateway) {
+        getIotGateway(() => {
+            generateCredentials(callback);
+        })
+    } else {
+        generateCredentials(callback);
+    }
 };
 
 function generateCredentials(callback) {
@@ -476,3 +495,13 @@ function generateCredentials(callback) {
 const getRandomInt = () => {
     return Math.floor(Math.random() * 100000000);
 };
+
+function getIotGateway(cb) {
+    const iot = new AWS.Iot();
+    iot.describeEndpoint({}, (err, data) => {
+        if (err) return callback(err);
+
+        iotGateway = data.endpointAddress;
+        cb();
+    })
+}
