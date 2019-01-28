@@ -249,9 +249,7 @@ resources:
         KeySchema:
           - AttributeName: "repo_name"
             KeyType: "HASH"
-        ProvisionedThroughput:
-          ReadCapacityUnits: 1
-          WriteCapacityUnits: 1
+        BillingMode: PAY_PER_REQUEST
         TableName: "build_lock"
     builds:
       Type: AWS::DynamoDB::Table
@@ -266,9 +264,7 @@ resources:
             KeyType: "HASH"
           - AttributeName: "build_start"
             KeyType: "RANGE"
-        ProvisionedThroughput:
-          ReadCapacityUnits: 1
-          WriteCapacityUnits: 1
+        BillingMode: PAY_PER_REQUEST
         TableName: "builds"
     buildStep:
       Type: AWS::DynamoDB::Table
@@ -292,12 +288,7 @@ resources:
             KeyType: "HASH"
           Projection:
             ProjectionType: "ALL"
-          ProvisionedThroughput:
-            ReadCapacityUnits: 1
-            WriteCapacityUnits: 1
-        ProvisionedThroughput:
-          ReadCapacityUnits: 1
-          WriteCapacityUnits: 1
+        BillingMode: PAY_PER_REQUEST
         TableName: "build_step"
     streamRole:
       Type: "AWS::IAM::Role"
