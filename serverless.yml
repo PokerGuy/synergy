@@ -4,7 +4,7 @@ provider:
   runtime: nodejs8.10
   stage: ${opt:AWS_ENV}
   region: us-west-2
-  timeout: 1500
+  timeout: 900
   memorySize: 3008
   iamRoleStatements:
     - Effect: "Allow"
