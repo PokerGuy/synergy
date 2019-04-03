@@ -381,7 +381,7 @@ module.exports.builds = async (event, context) => {
         }
     };
     try {
-        const data = docClient.query(p).promise();
+        const data = await docClient.query(p).promise();
         return {
             statusCode: 200,
             headers: {
@@ -407,7 +407,7 @@ module.exports.steps = async (event, context) => {
         }
     };
     try {
-        const data = docClient.query(p).promise();
+        const data = await docClient.query(p).promise();
         return {
             statusCode: 200,
             headers: {
@@ -435,7 +435,7 @@ module.exports.iot = async (event, context) => {
 const generateCredentials = async () => {
     const sts = new AWS.STS();
     try {
-        const data = sts.getCallerIdentity({}).promise();
+        const data = await sts.getCallerIdentity({}).promise();
         const params = {
             RoleArn: `arn:aws:iam::${data.Account}:role/stream-function-role`,
             RoleSessionName: getRandomInt().toString()
