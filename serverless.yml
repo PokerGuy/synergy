@@ -114,6 +114,7 @@ package:
 
 functions:
   githook:
+    timeout: 30
     memorySize: 128
     handler: handler.authenticate
     events:
@@ -125,6 +126,7 @@ functions:
     events:
       - sns: ${opt:AWS_ENV}-clone
   locks:
+    timeout: 30
     handler: handler.locks
     events:
       - http:
@@ -132,6 +134,7 @@ functions:
           method: get
           cors: true
   builds:
+    timeout: 30
     handler: handler.builds
     events:
       - http:
@@ -139,6 +142,7 @@ functions:
           method: get
           cors: true
   steps:
+    timeout: 30
     handler: handler.steps
     events:
       - http:
@@ -146,6 +150,7 @@ functions:
           method: get
           cors: true
   iot:
+    timeout: 30
     handler: handler.iot
     events:
       - http:
