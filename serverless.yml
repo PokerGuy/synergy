@@ -1,10 +1,10 @@
 service: synergydeployment
 provider:
   name: aws
-  runtime: nodejs6.10
+  runtime: nodejs8.10
   stage: ${opt:AWS_ENV}
   region: us-west-2
-  timeout: 300
+  timeout: 1500
   memorySize: 3008
   iamRoleStatements:
     - Effect: "Allow"
@@ -109,8 +109,8 @@ package:
 #  include:
 #    - include-me.js
 #    - include-me-dir/**
-#  exclude:
-#    - node_modules/aws-sdk/**
+  exclude:
+    - node_modules/aws-sdk/**
 
 functions:
   githook:
