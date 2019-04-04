@@ -6,6 +6,8 @@ rm -rf /tmp/clone
 
 cd /tmp
 
+echo "Cloning from git..."
+
 if [ "$AWS_ENV" == "prod" ]; then
     git clone -b master --single-branch $CLONE_URL clone
 else

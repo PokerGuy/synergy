@@ -10,9 +10,11 @@ module.exports.stream = async (document, topic, stream, gateway) => {
             payload: JSON.stringify(stream)
         };
         const streamMsg = iotData.publish(params).promise();
-        await Promise.all([storeInDynamo, streamMsg]);
+        const promises = await Promise.all([storeInDynamo, streamMsg]);
+        return;
     } catch (e) {
         console.log("Error:");
         console.log(e);
+        return;
     }
 };
