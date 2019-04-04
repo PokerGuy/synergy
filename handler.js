@@ -135,7 +135,7 @@ const checkGitSecret = async (event, context) => {
                 console.log("Found details where to send this message...");
                 console.log(url);
                 try {
-                    await postToDiffEnv(url, event.body, event.headers["X-Hub-Signature"]);
+                    await postToDiffEnv(url.url, event.body, event.headers["X-Hub-Signature"]);
                     return {"statusCode": 200};
                 } catch (e) {
                     console.log("Error:");
